@@ -131,7 +131,8 @@ def BuildProblem(params,dom,farm):
     bc_dict = {"uniform":windse.UniformInflow,
                "power":windse.PowerInflow,
                "log":windse.LogLayerInflow,
-               "turbsim":windse.TurbSimInflow}
+               "turbsim":windse.TurbSimInflow,
+               "uniform_turn":windse.UniformInflowTurn}
     bc = bc_dict[params["boundary_conditions"]["vel_profile"]](dom,fs,farm)
 
     ### Generate the problem ###

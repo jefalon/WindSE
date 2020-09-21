@@ -1163,8 +1163,8 @@ class CircleDomain(GenericDomain):
             else:
                 self.boundary_markers.set_value(facet_id,self.boundary_names["outflow"])
 
-        # mark_stop = time.time()
-        # self.fprint("Boundaries Marked: {:1.2f} s".format(mark_stop-mark_start))
+        mark_stop = time.time()
+        self.fprint("Boundaries Marked: {:1.2f} s".format(mark_stop-mark_start))
 
 class RectangleDomain(GenericDomain):
     """

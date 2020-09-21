@@ -66,6 +66,7 @@ class GenericProblem(object):
         if self.farm.turbine_method == "dolfin":
             self.tf1, self.tf2, self.tf3 = self.farm.DolfinTurbineForce(self.fs,self.dom.mesh,inflow_angle=inflow_angle)
             self.num_blade_segments = self.farm.blade_segments
+            self.rpm = self.params["wind_farm"]["rpm"]
 
 
 
@@ -287,7 +288,7 @@ class GenericProblem(object):
         
         ### Convolve TF with u ###
         if self.farm.turbine_method != 'alm':
-            tf = self.tf1*u[0]**2+self.tf2*u[1]**2+self.tf3*u[0]*u[1]
+            tf = -(self.tf1*u[0]**2+self.tf2*u[1]**2+self.tf3*u[0]*u[1])
         else:
             tf = sum(self.tf_list)
         return tf
@@ -431,7 +432,8 @@ class StabilizedProblem(GenericProblem):
         ### Calculate nu_T
         self.nu_T=l_mix**2.*S
         self.ReyStress=self.nu_T*grad(self.u_k)
-        self.vertKE= self.ReyStress[0,2]*self.u_k[0]
+        if self.dom.dim == 3:
+            self.vertKE= self.ReyStress[0,2]*self.u_k[0]
 
         ### Create the functional ###
         # if self.farm.yaw[0]**2 > 1e-4:

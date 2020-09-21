@@ -114,15 +114,15 @@ class GenericSolver(object):
             self.u_file = self.params.Save(u,"velocity",subfolder="solutions/",val=val)
             self.p_file = self.params.Save(p,"pressure",subfolder="solutions/",val=val)
             self.nuT_file = self.params.Save(self.nu_T,"eddy_viscosity",subfolder="solutions/",val=val)
-            self.ReyStress_file = self.params.Save(self.ReyStress,"Reynolds_stresses",subfolder="solutions/",val=val)
-            self.vertKE_file = self.params.Save(self.vertKE,"Vertical KE",subfolder="solutions/",val=val)
+            # self.ReyStress_file = self.params.Save(self.ReyStress,"Reynolds_stresses",subfolder="solutions/",val=val)
+            # self.vertKE_file = self.params.Save(self.vertKE,"Vertical KE",subfolder="solutions/",val=val)
             self.first_save = False
         else:
             self.params.Save(u,"velocity",subfolder="solutions/",val=val,file=self.u_file)
             self.params.Save(p,"pressure",subfolder="solutions/",val=val,file=self.p_file)
             self.params.Save(self.nu_T,"eddy_viscosity",subfolder="solutions/",val=val,file=self.nuT_file)
-            self.params.Save(self.ReyStress,"Reynolds_stresses",subfolder="solutions/",val=val,file=self.ReyStress_file)
-            self.params.Save(self.vertKE,"Vertical KE",subfolder="solutions/",val=val,file=self.vertKE_file)
+            # self.params.Save(self.ReyStress,"Reynolds_stresses",subfolder="solutions/",val=val,file=self.ReyStress_file)
+            # self.params.Save(self.vertKE,"Vertical KE",subfolder="solutions/",val=val,file=self.vertKE_file)
         u.vector()[:]=u.vector()[:]*self.problem.dom.xscale
         self.problem.dom.mesh.coordinates()[:]=self.problem.dom.mesh.coordinates()[:]*self.problem.dom.xscale
 
@@ -317,8 +317,11 @@ class SteadySolver(GenericSolver):
 
         ### Hack into doflin adjoint to update the local controls at the start of the adjoint solve ###
         self.nu_T = project(self.problem.nu_T,self.problem.fs.Q,solver_type='mumps',**self.extra_kwarg)
-        self.ReyStress = project(self.problem.ReyStress,self.problem.fs.T,solver_type='mumps',**self.extra_kwarg)
-        self.vertKE = project(self.problem.vertKE,self.problem.fs.Q,solver_type='mumps',**self.extra_kwarg)
+        # self.ReyStress = project(self.problem.ReyStress,self.problem.fs.T,solver_type='mumps',**self.extra_kwarg)
+        
+        if "KE_entrainment" in self.params.output:
+            if self.problem.dom.dim == 3:
+                self.vertKE = project(self.problem.vertKE,self.problem.fs.Q,solver_type='mumps',**self.extra_kwarg)
 
         # self.nu_T = None
 
@@ -555,7 +558,8 @@ class UnsteadySolver(GenericSolver):
 
             # Compute Reynolds Stress
             self.problem.uk_sum.assign(self.problem.uk_sum+self.problem.u_k)
-            self.problem.vertKE = (self.problem.u_k[0]-self.problem.uk_sum[0]/self.simTime)*(self.problem.u_k[2]-self.problem.uk_sum[2]/self.simTime)
+            if self.problem.dom.dim == 3:
+                self.problem.vertKE = (self.problem.u_k[0]-self.problem.uk_sum[0]/self.simTime)*(self.problem.u_k[2]-self.problem.uk_sum[2]/self.simTime)
 
             
             if save_next_timestep:
@@ -606,13 +610,14 @@ class UnsteadySolver(GenericSolver):
                     average_vel = Function(self.problem.fs.V)
                     average_vel.vector()[:] = self.problem.u_k1.vector()[:]*self.problem.dt
 
-                    average_power = self.problem.alm_power*self.problem.dt
+                    if self.problem.farm.turbine_method == "alm":
+                        average_power = self.problem.alm_power*self.problem.dt
 
                     init_average = False
                 else:
                     average_vel.vector()[:] += self.problem.u_k1.vector()[:]*self.problem.dt
-
-                    average_power += self.problem.alm_power*self.problem.dt
+                    if self.problem.farm.turbine_method == "alm":
+                        average_power += self.problem.alm_power*self.problem.dt
 
 
             # # Adjust the timestep size, dt, for a balance of simulation speed and stability
@@ -688,12 +693,14 @@ class UnsteadySolver(GenericSolver):
 
         if hasattr(self.problem,"tf_save"):
             self.problem.tf_save.vector()[:] = 0
-            for fun in self.problem.tf_list:
-                self.problem.tf_save.vector()[:] = self.problem.tf_save.vector()[:] + fun.vector()[:]
+            if self.problem.farm.turbine_method == "alm":
+                for fun in self.problem.tf_list:
+                    self.problem.tf_save.vector()[:] = self.problem.tf_save.vector()[:] + fun.vector()[:]
         else:
             self.problem.tf_save = Function(self.problem.fs.V)
-            for fun in self.problem.tf_list:
-                self.problem.tf_save.vector()[:] = self.problem.tf_save.vector()[:] + fun.vector()[:]
+            if self.problem.farm.turbine_method == "alm":
+                for fun in self.problem.tf_list:
+                    self.problem.tf_save.vector()[:] = self.problem.tf_save.vector()[:] + fun.vector()[:]
 
 
         if self.first_save:

@@ -92,6 +92,9 @@ boundary_conditions:
     k:              0.4
     turbsim_path:   Null
     inflow_angle:   Null
+    start_turn:     Null
+    turn_amount:    Null
+    turn_time:      Null
     boundary_names: 
         east:    Null   # positive x
         north:   Null   # positive y

@@ -499,6 +499,150 @@ class TurbSimInflow(LogLayerInflow):
 
         self.SetupBoundaries()
 
+class UniformInflowTurn(GenericBoundary):
+    def __init__(self,dom,fs,farm):
+        super(UniformInflowTurn, self).__init__(dom,fs,farm)
+        self.fprint("Setting Up Boundary Conditions",special="header")
+        self.fprint("Type: Uniform Inflow")
+        for key, values in self.boundary_types.items():
+            self.fprint("Boundary Type: {0}, Applied to:".format(key))
+            for value in values:
+                self.fprint(value,offset=1)
+        ### Create the Velocity Function ###
+        self.ux = Function(fs.V0)
+        self.uy = Function(fs.V1)
+        if self.dom.dim == 3:
+            self.uz = Function(fs.V2)
+        self.unit_reference_velocity = np.full(len(self.ux.vector()[:]),1.0)
+        self.ux.vector()[:] = self.unit_reference_velocity
+
+        ux_com, uy_com, uz_com = self.PrepareVelocity(self.dom.inflow_angle)
+        self.ux.vector()[:] = ux_com
+        self.uy.vector()[:] = uy_com
+        if self.dom.dim == 3:
+            self.uz.vector()[:] = uz_com
+
+        ### Compute distances ###
+        if self.dom.dim == 3:
+            self.fprint("Computing Distance to Ground")
+            self.CalculateHeights()
+
+        ### Assigning Velocity
+        self.fprint("Computing Velocity Vector")
+        self.bc_velocity = Function(fs.V)
+        if self.dom.dim == 3:
+            self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy,self.uz])
+        else:
+            self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy])
+
+        ### Create Pressure Boundary Function
+        self.bc_pressure = Function(fs.Q)
+
+        ### Create Initial Guess
+        self.fprint("Assigning Initial Guess")
+        self.u0 = Function(fs.W)
+        self.fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
+
+        ### Setup the boundary Conditions ###
+        self.SetupBoundaries()
+        self.fprint("Boundary Condition Finished",special="footer")
+
+    def UpdateVelocity(self, simTime):
+        turn_angle = self.params['boundary_conditions']['turn_amount']
+        turn_start = self.params['boundary_conditions']['start_turn']
+        turn_duration = self.params['boundary_conditions']['turn_time']
+        turn_stop = turn_start+turn_duration
+
+        if simTime>=turn_start and simTime<turn_duration+turn_start:
+
+            new_angle = turn_angle*((simTime-turn_start)/turn_duration)
+
+            print(new_angle)
+
+            # self.dom.RecomputeBoundaryMarkers(new_angle)
+
+            ux_com, uy_com, uz_com = self.PrepareVelocity(new_angle)
+
+            self.ux = Function(self.fs.V0)
+            self.uy = Function(self.fs.V1)
+            if self.dom.dim == 3:
+                self.uz = Function(self.fs.V2)
+
+            self.ux.vector()[:] = ux_com
+            self.uy.vector()[:] = uy_com
+            if self.dom.dim == 3:
+                self.uz.vector()[:] = uz_com
+
+            ### Assigning Velocity
+            self.bc_velocity = Function(self.fs.V)
+            self.bc_velocity.rename("bc_velocity","bc_velocity")
+            
+            if self.dom.dim == 3:
+                self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy,self.uz])
+            else:
+                self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy])
+            
+            ### Create Pressure Boundary Function
+            self.bc_pressure = Function(self.fs.Q)
+
+            # ### Create Initial Guess
+            # self.fprint("Assigning Initial Guess")
+            # self.u0 = Function(self.fs.W)
+            # self.fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
+
+            self.SetupBoundaries()
+
+            # ux_com, uy_com, uz_com = self.PrepareVelocity(turn_angle*((simTime-turn_start)/turn_duration))
+            # self.ux.vector()[:] = ux_com
+            # self.uy.vector()[:] = uy_com
+            # if self.dom.dim == 3:
+            #     self.uz.vector()[:] = uz_com
+
+            # self.bc_velocity = Function(self.fs.V)
+            # if self.dom.dim == 3:
+            #     self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux.vector()[:]*cos(turn_angle*((simTime-turn_start)/turn_duration)),self.ux.vector()[:]*sin(turn_angle*((simTime-turn_start)/turn_duration)),self.uz])
+            # else:
+            #     self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux.vector()[:]*math.cos(turn_angle*((simTime-turn_start)/turn_duration)),self.ux.vector()[:]*math.sin(turn_angle*((simTime-turn_start)/turn_duration))])
+
+            # self.SetupBoundaries()
+
+        elif simTime >= turn_duration+turn_start:
+
+            ux_com, uy_com, uz_com = self.PrepareVelocity(turn_angle)
+
+            self.ux = Function(self.fs.V0)
+            self.uy = Function(self.fs.V1)
+            if self.dom.dim == 3:
+                self.uz = Function(self.fs.V2)
+
+            self.ux.vector()[:] = ux_com
+            self.uy.vector()[:] = uy_com
+            if self.dom.dim == 3:
+                self.uz.vector()[:] = uz_com
+
+            ### Assigning Velocity
+            self.bc_velocity = Function(self.fs.V)
+            self.bc_velocity.rename("bc_velocity","bc_velocity")
+            
+            if self.dom.dim == 3:
+                self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy,self.uz])
+            else:
+                self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy])
+            
+            ### Create Pressure Boundary Function
+            self.bc_pressure = Function(self.fs.Q)
+
+            self.SetupBoundaries()
+
+
+            # self.bc_velocity = Function(self.fs.V)
+            # if self.dom.dim == 3:
+            #     self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux*cos(turn_angle),self.uy*sin(turn_angle),self.uz])
+            # else:
+            #     self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux*cos(turn_angle),self.uy*sin(turn_angle)])
+
+            # self.SetupBoundaries()
+
 
 
 
