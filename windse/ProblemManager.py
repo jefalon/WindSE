@@ -440,7 +440,7 @@ class StabilizedProblem(GenericProblem):
         #     self.F = inner(grad(self.u_k)*self.u_k, v)*dx + (nu+self.nu_T)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx + inner(self.tf,v)*dx 
         # else :
         # self.F = inner(grad(self.u_k)*self.u_k, v)*dx + Sx*Sx*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx# + inner(self.tf,v)*dx 
-        self.F = inner(grad(self.u_k)*self.u_k, v)*dx + Sx*Sx*(nu+self.nu_T)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx + inner(self.tf,v)*dx 
+        self.F = inner(grad(self.u_k)*self.u_k, v)*dx + Sx*Sx*(nu+self.nu_T)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx - inner(self.tf,v)*dx 
         # self.F_sans_tf =  (1.0)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx
         # self.F = inner(grad(self.u_k)*self.u_k, v)*dx + (nu+self.nu_T)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx + inner(self.tf*(self.u_k[0]**2+self.u_k[1]**2),v)*dx 
 
@@ -489,6 +489,7 @@ class TaylorHoodProblem(GenericProblem):
     def ComputeFunctional(self,inflow_angle=None):
         self.fprint("Setting Up Taylor-Hood Problem",special="header")
 
+
         ### These constants will be moved into the params file ###
         f = Constant((0.0,)*self.dom.dim)
         vonKarman=0.41
@@ -526,7 +527,7 @@ class TaylorHoodProblem(GenericProblem):
         self.tf = self.ComputeTurbineForce(self.u_k,inflow_angle)
 
         ### Create the functional ###
-        self.F = inner(grad(self.u_k)*self.u_k, v)*dx + (nu+self.nu_T)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx + inner(self.tf,v)*dx 
+        self.F = inner(grad(self.u_k)*self.u_k, v)*dx + (nu+self.nu_T)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx - inner(self.tf,v)*dx 
 
         if self.use_25d_model:
             if self.dom.dim == 3:
@@ -567,6 +568,10 @@ class UnsteadyProblem(GenericProblem):
 
     def ComputeFunctional(self,inflow_angle=None):
         # ================================================================
+
+        
+        ### Update boundary if needed
+        self.bd.UpdateVelocity(0.0)
 
         # Define fluid properties
         # FIXME: These should probably be set in params.yaml input filt

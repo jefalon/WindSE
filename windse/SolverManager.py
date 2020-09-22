@@ -508,7 +508,6 @@ class UnsteadySolver(GenericSolver):
         min_count = 0
         i = 0
         stable = False
-        tip_speed = self.problem.rpm*2.0*np.pi*self.problem.farm.radius[0]/60.0
 
         # self.problem.alm_power_sum = 0.0
         init_average = True
@@ -518,8 +517,6 @@ class UnsteadySolver(GenericSolver):
         while not stable and self.simTime < self.final_time:
             self.problem.bd.UpdateVelocity(self.simTime)
 
-            # Record the "old" max velocity (before this update)
-            u_max_k1 = max(tip_speed, self.problem.u_k.vector().max())
 
             # Step 1: Tentative velocity step
             b1 = assemble(self.problem.L1, tensor=b1)
@@ -550,8 +547,6 @@ class UnsteadySolver(GenericSolver):
             self.problem.u_k1.assign(self.problem.u_k)
             self.problem.p_k1.assign(self.problem.p_k)
 
-            # Record the updated max velocity
-            u_max = max(tip_speed, self.problem.u_k.vector().max())
 
             # Update the simulation time
             self.simTime += self.problem.dt
@@ -574,12 +569,19 @@ class UnsteadySolver(GenericSolver):
                 # self.SaveTimeSeries(fp, self.simTime)
                 self.SaveTimeSeries(self.simTime)
 
-            # Adjust the timestep size, dt, for a balance of simulation speed and stability
-            save_next_timestep = self.AdjustTimestepSize(save_next_timestep, self.save_interval, self.simTime, u_max, u_max_k1)
 
             # Update the turbine force
             if self.problem.farm.turbine_method == "alm":
                 # t1 = time.time()
+
+                tip_speed = self.problem.rpm*2.0*np.pi*self.problem.farm.radius[0]/60.0
+                # Record the "old" max velocity (before this update)
+                u_max_k1 = max(tip_speed, self.problem.u_k1.vector().max())
+                # Record the updated max velocity
+                u_max = max(tip_speed, self.problem.u_k.vector().max())
+
+                # Adjust the timestep size, dt, for a balance of simulation speed and stability
+                save_next_timestep = self.AdjustTimestepSize(save_next_timestep, self.save_interval, self.simTime, u_max, u_max_k1)
 
                 new_tf_list = self.problem.farm.CalculateActuatorLineTurbineForces(self.problem, self.simTime)
 
@@ -604,8 +606,13 @@ class UnsteadySolver(GenericSolver):
                 self.fprint(output_str)
 
                 # exit()
+            else:
+                # Adjust the timestep size, dt, for a balance of simulation speed and stability
+                u_max_k1 = self.problem.u_k1.vector().max()
+                u_max = self.problem.u_k.vector().max()
+                save_next_timestep = self.AdjustTimestepSize(save_next_timestep, self.save_interval, self.simTime, u_max, u_max_k1)
 
-            if self.simTime > average_start_time:
+            if self.simTime > average_start_time and self.problem.farm.turbine_method == "alm":
                 if init_average:
                     average_vel = Function(self.problem.fs.V)
                     average_vel.vector()[:] = self.problem.u_k1.vector()[:]*self.problem.dt
@@ -669,7 +676,7 @@ class UnsteadySolver(GenericSolver):
             self.J = self.J/float(dt_sum)
 
 
-        if self.simTime > average_start_time:
+        if self.simTime > average_start_time and self.problem.farm.turbine_method == "alm":
             average_vel.vector()[:] = average_vel.vector()[:]/(self.simTime-average_start_time)
             fp = File('./output/%s/average_vel.pvd' % (self.params.name))
             average_vel.rename('average_vel', 'average_vel')
@@ -690,18 +697,21 @@ class UnsteadySolver(GenericSolver):
 
     def SaveTimeSeries(self, simTime):
 
+        if self.problem.bd.vel_profile == 'rotating_sine':
+            self.problem.dom.Save(simTime)
+            self.problem.bd.SaveInitialGuess(simTime)
 
-        if hasattr(self.problem,"tf_save"):
-            self.problem.tf_save.vector()[:] = 0
-            if self.problem.farm.turbine_method == "alm":
+        if hasattr(self.problem,"tf_list"):
+            if hasattr(self.problem,"tf_save"):
+                self.problem.tf_save.vector()[:] = 0
+                for fun in self.problem.tf_list:
+                    self.problem.tf_save.vector()[:] = self.problem.tf_save.vector()[:] + fun.vector()[:]
+            else:
+                self.problem.tf_save = Function(self.problem.fs.V)
                 for fun in self.problem.tf_list:
                     self.problem.tf_save.vector()[:] = self.problem.tf_save.vector()[:] + fun.vector()[:]
         else:
-            self.problem.tf_save = Function(self.problem.fs.V)
-            if self.problem.farm.turbine_method == "alm":
-                for fun in self.problem.tf_list:
-                    self.problem.tf_save.vector()[:] = self.problem.tf_save.vector()[:] + fun.vector()[:]
-
+            self.problem.tf_save = self.problem.farm.actuator_disks
 
         if self.first_save:
             self.velocity_file = self.params.Save(self.problem.u_k,"velocity",subfolder="timeSeries/",val=simTime)
@@ -764,6 +774,7 @@ class UnsteadySolver(GenericSolver):
 
         # Calculate the ideal timestep size (ignore file output considerations for now)
         dt_new = cfl_target * self.problem.dom.mesh.hmin() / u_max_projected
+        print(u_max_projected)
 
         # Move to larger dt slowly (smaller dt happens instantly)
         if dt_new > self.problem.dt:
@@ -772,9 +783,13 @@ class UnsteadySolver(GenericSolver):
             dt_new = SOR*dt_new + (1.0-SOR)*self.problem.dt
 
         # dt_new = dt_new/2.0
+        # dt_new = 0.04
+        if self.problem.dom.dim < 3: #### TODO: Fix AdjustTimeStep to work with 2D problems ###
+            dt_new = 0.1
 
         # Calculate the time remaining until the next file output
         time_remaining = saveInterval - (simTime % saveInterval)
+
 
         # If the new timestep would jump past a save point, modify the new timestep size
         if not save_next_timestep and dt_new + dt_min >= time_remaining:
@@ -783,7 +798,6 @@ class UnsteadySolver(GenericSolver):
         else:
             save_next_timestep = False
 
-        # dt_new = 0.04
 
         # Update both the Python variable and FEniCS constant
         self.problem.dt = dt_new

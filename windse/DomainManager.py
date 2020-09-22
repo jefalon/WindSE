@@ -1251,7 +1251,10 @@ class RectangleDomain(GenericDomain):
         
         ### Set up the baseline (angle=0) order ###
         cardinal_ids = [east_id,north_id,west_id,south_id]
-        diagonal_ids = [outflow_id,outflow_id,inflow_id,inflow_id]
+        if inflow_angle < 0:
+            diagonal_ids = [outflow_id,inflow_id,inflow_id,outflow_id]
+        else: 
+            diagonal_ids = [outflow_id,outflow_id,inflow_id,inflow_id]
 
         ### Count the number of pi/2 sections in the new inflow_angle ###
         turns = inflow_angle/(pi/2)

@@ -95,6 +95,8 @@ boundary_conditions:
     start_turn:     Null
     turn_amount:    Null
     turn_time:      Null
+    angle_range:    Null
+    period:         Null
     boundary_names: 
         east:    Null   # positive x
         north:   Null   # positive y

@@ -431,6 +431,30 @@ class LogLayerInflow(GenericBoundary):
         self.SetupBoundaries()
         self.fprint("Boundary Condition Setup",special="footer")
 
+class RotatingSineInflow(UniformInflow): ### Switch to loglayer to allow for 3D
+    def __init__(self,dom,fs,farm):
+        super(RotatingSineInflow, self).__init__(dom,fs,farm)
+        if self.angle_range is None:
+            raise ValueError("A rotating boundary condition requires the 'boundary_conditions:angle_range:[theta0,theta1] radians' option set in the yaml file")
+        if self.period is None:
+            raise ValueError("A rotating boundary condition requires the 'boundary_conditions:period:float seconds' option set in the yaml file")
+
+    def angle_func(self, time):
+        theta0 = self.angle_range[0]
+        theta1 = self.angle_range[1]
+        return (theta1-theta0)/2.0*-np.cos(2*np.pi*time/self.period)+(theta0+theta1)/2.0
+
+    def UpdateVelocity(self, simTime):
+        inflow_angle = self.angle_func(simTime)
+        self.dom.RecomputeBoundaryMarkers(inflow_angle)
+        self.RecomputeVelocity(inflow_angle) 
+        # print()
+        # print(inflow_angle*180/np.pi)
+        # print(self.bc_velocity([0,0]))
+        # print()
+        # self.dom.Save(simTime)
+        # self.SaveInitialGuess(simTime)
+
 class TurbSimInflow(LogLayerInflow):
     def __init__(self,dom,fs,farm):
         super(TurbSimInflow, self).__init__(dom,fs,farm)
