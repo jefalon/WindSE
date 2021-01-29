@@ -124,6 +124,8 @@ solver:
     velocity_path:     Null
     power_type:        power
     save_power:        True
+    linear_solver:     mumps
+    preconditioner:    default
     nonlinear_solver:  snes
     newton_relaxation: 1.0
     cfl_target: 0.5

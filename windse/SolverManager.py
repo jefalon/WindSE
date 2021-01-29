@@ -271,6 +271,7 @@ class SteadySolver(GenericSolver):
         # self.fprint("Converged Successfully: {0}".format(converged))
         ####################################################################
 
+
         self.fprint("Solving with {0}".format(self.nonlinear_solver))
         if self.nonlinear_solver == "newton":
             self.fprint("Relaxation parameter = {: 1.2f}".format(self.newton_relaxation))
@@ -281,7 +282,8 @@ class SteadySolver(GenericSolver):
 
             newton_options = {"relaxation_parameter": self.newton_relaxation,
                               "maximum_iterations": 40,
-                              "linear_solver": "mumps",
+                              "linear_solver": self.linear_solver,
+                              "preconditioner": self.preconditioner, 
                               "absolute_tolerance": 1e-6,
                               "relative_tolerance": 1e-5,
                               "krylov_solver": krylov_options}
@@ -295,7 +297,8 @@ class SteadySolver(GenericSolver):
                                  "snes_solver": {
                                  "absolute_tolerance": 1e-6,
                                  "relative_tolerance": 1e-5,
-                                 "linear_solver": "mumps", 
+                                 "linear_solver": self.linear_solver,
+                                 "preconditioner": self.preconditioner, 
                                  "maximum_iterations": 40,
                                  "error_on_nonconvergence": True,
                                  "line_search": "basic",

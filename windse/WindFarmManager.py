@@ -860,8 +860,8 @@ class GenericWindFarm(object):
         self.fprint("Using a Dolfin Representation")
 
         ### this section of code is a hack to get "chord"-type disk representation ###
-        if self.mchord is not None:
-            if self.chord is not None:
+        if self.mchord is None and self.force == "chord":
+            if self.chord is None:
                 if self.blade_segments == "computed":
                     self.num_blade_segments = 10 ##### FIX THIS ####
                     self.blade_segments = self.num_blade_segments
@@ -918,7 +918,6 @@ class GenericWindFarm(object):
             W = self.thickness[i]*1.0
             R = self.RD[i]/2.0
             ma = self.ma[i]
-            chord = self.mchord[i]
             C_tprime = 4*ma/(1-ma)
 
             ### Set up some dim dependent values ###
@@ -949,6 +948,7 @@ class GenericWindFarm(object):
             elif self.force == "sine":
                 force = (r*sin(pi*r)+0.5)/S_norm
             elif self.force == "chord":
+                chord = self.mchord[i]
                 force = RadialChordForce(r,chord)
             F = 0.5*A*C_tprime*force
 
