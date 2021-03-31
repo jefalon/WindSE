@@ -1,4 +1,4 @@
-import dolfin
+import firedrake
 import dolfin_adjoint
 import numpy as np
 from sys import platform
@@ -75,7 +75,7 @@ class BaseHeightBlock(Block):
     def evaluate_adj_component(self, inputs, adj_inputs, block_variable, idx, prepared=None):
         x = prepared[0]
         y = prepared[1]
-        # h = dolfin.Constant(10)
+        # h = firedrake.Constant(10)
         adj_input = adj_inputs[0]
 
         # print((float(x),float(y)))
@@ -684,8 +684,8 @@ class ActuatorLineForceBlock(Block):
 
 
         # tf = backend_UpdateActuatorLineForce(self.problem, u_k1, self.simTime_id, self.dt, self.turb_index)
-        # gut = dolfin.grad(u_k1)
-        # gtt = dolfin.grad(tf)
+        # gut = firedrake.grad(u_k1)
+        # gtt = firedrake.grad(tf)
         # gu = gut#.T
         # gt = gtt#.T
         # prepared["u_local"] = [[],[],[]]
@@ -693,14 +693,14 @@ class ActuatorLineForceBlock(Block):
 
 
         # if not hasattr(self.problem,"dtfdu_files"):
-        #     self.problem.dtfdu_files = [dolfin.File(self.problem.params.folder+"debug/dtf0.pvd"),
-        #                                 dolfin.File(self.problem.params.folder+"debug/dtf1.pvd"),
-        #                                 dolfin.File(self.problem.params.folder+"debug/dtf2.pvd")]
+        #     self.problem.dtfdu_files = [firedrake.File(self.problem.params.folder+"debug/dtf0.pvd"),
+        #                                 firedrake.File(self.problem.params.folder+"debug/dtf1.pvd"),
+        #                                 firedrake.File(self.problem.params.folder+"debug/dtf2.pvd")]
 
 
         # for i in range(3):
 
-        #     test = dolfin.Function(self.problem.fs.V)
+        #     test = firedrake.Function(self.problem.fs.V)
         #     test.rename("dtf"+repr(i),"dtf"+repr(i))
         #     test_vec = test.vector().get_local()
 
@@ -708,30 +708,30 @@ class ActuatorLineForceBlock(Block):
         #     #     this only work for 0 degree inflow (west to east or east to west)
         #     #     if self.simTime == 0:
         #     #         # val1 = gu[j,0]
-        #     #         # val1 = dolfin.project(val1, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
+        #     #         # val1 = firedrake.project(val1, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
 
         #     #         # val2 = gu[j,1]
-        #     #         # val2 = dolfin.project(val2, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
+        #     #         # val2 = firedrake.project(val2, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
 
         #     #         # val3 = gu[j,2]
-        #     #         # val3 = dolfin.project(val3, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
+        #     #         # val3 = firedrake.project(val3, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
 
         #     #         # print(min(val1.vector().get_local()),min(val2.vector().get_local()),min(val3.vector().get_local()))
         #     #         # print(max(val1.vector().get_local()),max(val2.vector().get_local()),max(val3.vector().get_local()))
         #     #         # if j == 0:
         #     #         #     val = gt[i,0]*(1/gu[j,0])+gt[i,1]*(1/gu[j,1])+gt[i,2]*(1/gu[j,1])
         #     #         # else:
-        #     #         val = dolfin.Constant(0.0)
+        #     #         val = firedrake.Constant(0.0)
         #     #     else:
         #     #         val = gt[i,0]*(1/gu[j,0])+gt[i,1]*(1/gu[j,1])+gt[i,2]*(1/gu[j,1])
 
         #     if self.simTime == 0:
-        #         temp = dolfin.Function(self.problem.fs.Q)
+        #         temp = firedrake.Function(self.problem.fs.Q)
         #         temp.vector()[:] = 0.0
         #         temp = temp.vector().get_local()
         #         for j in range(3):
         #             # val1 = gu[i,j]
-        #             # val1 = dolfin.project(val1, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
+        #             # val1 = firedrake.project(val1, self.problem.fs.Q,solver_type='cg', preconditioner_type='hypre_amg')
         #             # print("du_"+repr(i)+"/d_"+repr(j)+repr((min(val1.vector().get_local()),max(val1.vector().get_local()))))
         #             test_vec[j::3] = 0.0
 
@@ -742,7 +742,7 @@ class ActuatorLineForceBlock(Block):
         #         val_numer =  gt[i,2]*gu[1,1]*gu[2,0] - gt[i,1]*gu[1,2]*gu[2,0] - gt[i,2]*gu[1,0]*gu[2,1] + gt[i,0]*gu[1,2]*gu[2,1] + gt[i,1]*gu[1,0]*gu[2,2] - gt[i,0]*gu[1,1]*gu[2,2]
         #         val_denom =  gu[0,2]*gu[1,1]*gu[2,0] - gu[0,1]*gu[1,2]*gu[2,0] - gu[0,2]*gu[1,0]*gu[2,1] + gu[0,0]*gu[1,2]*gu[2,1] + gu[0,1]*gu[1,0]*gu[2,2] - gu[0,0]*gu[1,1]*gu[2,2]
         #         val = val_numer/val_denom
-        #         val = dolfin.project(val, self.problem.fs.Q,solver_type='mumps')
+        #         val = firedrake.project(val, self.problem.fs.Q,solver_type='mumps')
         #         test_vec[0::3] = val.vector().get_local()
         #         prepared["u_local"][i].append(val.vector().get_local())#/np.linalg.norm(val.vector().get_local()))
 
@@ -750,7 +750,7 @@ class ActuatorLineForceBlock(Block):
         #         val_numer =  gt[i,2]*gu[0,1]*gu[2,0] - gt[i,1]*gu[0,2]*gu[2,0] - gt[i,2]*gu[0,0]*gu[2,1] + gt[i,0]*gu[0,2]*gu[2,1] + gt[i,1]*gu[0,0]*gu[2,2] - gt[i,0]*gu[0,1]*gu[2,2]
         #         val_denom = -gu[0,2]*gu[1,1]*gu[2,0] + gu[0,1]*gu[1,2]*gu[2,0] + gu[0,2]*gu[1,0]*gu[2,1] - gu[0,0]*gu[1,2]*gu[2,1] - gu[0,1]*gu[1,0]*gu[2,2] + gu[0,0]*gu[1,1]*gu[2,2]
         #         val = val_numer/val_denom
-        #         val = dolfin.project(val, self.problem.fs.Q,solver_type='mumps')
+        #         val = firedrake.project(val, self.problem.fs.Q,solver_type='mumps')
         #         test_vec[1::3] = val.vector().get_local()
         #         prepared["u_local"][i].append(val.vector().get_local())#/np.linalg.norm(val.vector().get_local()))
 
@@ -758,7 +758,7 @@ class ActuatorLineForceBlock(Block):
         #         val_numer =  gt[i,2]*gu[0,1]*gu[1,0] - gt[i,1]*gu[0,2]*gu[1,0] - gt[i,2]*gu[0,0]*gu[1,1] + gt[i,0]*gu[0,2]*gu[1,1] + gt[i,1]*gu[0,0]*gu[1,2] - gt[i,0]*gu[0,1]*gu[1,2]
         #         val_denom =  gu[0,2]*gu[1,1]*gu[2,0] - gu[0,1]*gu[1,2]*gu[2,0] - gu[0,2]*gu[1,0]*gu[2,1] + gu[0,0]*gu[1,2]*gu[2,1] + gu[0,1]*gu[1,0]*gu[2,2] - gu[0,0]*gu[1,1]*gu[2,2]
         #         val = val_numer/val_denom
-        #         val = dolfin.project(val, self.problem.fs.Q,solver_type='mumps')
+        #         val = firedrake.project(val, self.problem.fs.Q,solver_type='mumps')
         #         test_vec[2::3] = val.vector().get_local()
         #         prepared["u_local"][i].append(val.vector().get_local())#/np.linalg.norm(val.vector().get_local()))
 
@@ -780,11 +780,11 @@ class ActuatorLineForceBlock(Block):
                 h = np.zeros(u_local_vec.shape)
                 h[i::3] = h_mag
             
-                u_mh = dolfin.Function(u_k1.function_space())
+                u_mh = firedrake.Function(u_k1.function_space())
                 u_mh.vector()[:] = u_local_vec-h
 
 
-                u_ph = dolfin.Function(u_k1.function_space())
+                u_ph = firedrake.Function(u_k1.function_space())
                 u_ph.vector()[:] = u_local_vec+h
 
                 temp_umh = backend_UpdateActuatorLineForce(self.problem, u_mh, self.simTime_id, self.dt, self.turb_index)
@@ -803,7 +803,7 @@ class ActuatorLineForceBlock(Block):
 
 
         # if not hasattr(self.problem,"ul_adjoint_files"):
-        #     self.problem.ul_adjoint_files = dolfin.File(self.problem.params.folder+"debug/ul_adjoint.pvd")
+        #     self.problem.ul_adjoint_files = firedrake.File(self.problem.params.folder+"debug/ul_adjoint.pvd")
 
 
         if name == "u_local":
@@ -818,7 +818,7 @@ class ActuatorLineForceBlock(Block):
             #     for j in range(3):
             #         comp_vec[i::3] += prepared[name][j][i]*adj_vec[j::3]
 
-            # adj_output = dolfin.Function(self.u_local.function_space())
+            # adj_output = firedrake.Function(self.u_local.function_space())
             # adj_output.vector()[:] = adj_vec #comp_vec
             # # adj_output.rename("u_adjoint","u_adjoint")
             # # self.problem.ul_adjoint_files.write(adj_output,self.simTime)
@@ -848,7 +848,7 @@ class ActuatorLineForceBlock(Block):
             #
             #
             #
-            adj_output = dolfin.Function(self.u_local.function_space())
+            adj_output = firedrake.Function(self.u_local.function_space())
             if self.problem.farm.use_local_velocity:
                 adj_vec = adj_inputs[0].get_local()
                 comp_vec = np.zeros(adj_vec.shape)
@@ -875,12 +875,12 @@ class ActuatorLineForceBlock(Block):
             #     adj_vec = adj_inputs[0].get_local()
             #     adj_output_vec += np.inner(comp_vec, adj_vec)
 
-            # adj_output = dolfin.Function(self.u_local.function_space())
+            # adj_output = firedrake.Function(self.u_local.function_space())
             # adj_output.vector()[:] = adj_output_vec
 
 
             # adj_vec = adj_inputs[0].get_local()
-            # adj_output = dolfin.Function(self.u_local.function_space())
+            # adj_output = firedrake.Function(self.u_local.function_space())
             # adj_output.vector()[:] = (prepared[name][0]+prepared[name][1]+prepared[name][2])*adj_vec
 
 
@@ -931,7 +931,7 @@ class ActuatorLineForceBlock(Block):
 
 
 ### We need to override ALE move so that dolfin-adjoint can track the change ###
-backend_move = dolfin.ALE.move
+backend_move = firedrake.ALE.move
 def move(mesh,bmesh, **kwargs):
     """ Refine is overloaded to ensure that the returned mesh is overloaded.
     """
@@ -940,8 +940,8 @@ def move(mesh,bmesh, **kwargs):
     overloaded = create_overloaded_object(mesh)
     return overloaded
 
-if "dolfin_adjoint_helper" not in dolfin.ALE.move.__module__:
-    dolfin.ALE.move = move
+if "dolfin_adjoint_helper" not in firedrake.ALE.move.__module__:
+    firedrake.ALE.move = move
 
 def linalg_solve(*args, **kwargs):
     """This function overrides dolfin_adjoints.compat.linalg_solve.
@@ -949,7 +949,7 @@ def linalg_solve(*args, **kwargs):
     The original function doesn't allow for solver options because it uses
      the::
 
-        dolfin.solve(A,x,b) 
+        firedrake.solve(A,x,b) 
 
     form which doesn't accept keyword arguments. However, It does except 
     additional arguments that defined some solver options, which we pass
@@ -1029,14 +1029,14 @@ def recompute_component(self, inputs, block_variable, idx, prepared):
                     self.recompute_set +=1
                 # print("and that's the "+repr(self.recompute_set)+" time this has happened")
                 # print()
-                self.savefile = dolfin.File(windse_parameters.folder+"debug/dolfin_adjoint_func_"+repr(self.recompute_set)+".pvd")
+                self.savefile = firedrake.File(windse_parameters.folder+"debug/dolfin_adjoint_func_"+repr(self.recompute_set)+".pvd")
                 self.solve_iteration = 0
             
             
             u, p = func.split(True)
             u.rename("velocity","velocity")
             self.savefile << (u,self.solve_iteration)
-    # print("assemble(func*dx): " + repr(float(dolfin.assemble(dolfin.inner(func,func)*dolfin.dx))))
+    # print("assemble(func*dx): " + repr(float(firedrake.assemble(firedrake.inner(func,func)*firedrake.dx))))
     return func
 if "dolfin_adjoint_helper" not in dolfin_adjoint.solving.SolveBlock.recompute_component.__module__:
     dolfin_adjoint.solving.SolveBlock.recompute_component = recompute_component
@@ -1118,7 +1118,7 @@ def _assemble_and_solve_adj_eq(self, dFdu_form, dJdu):
     dolfin_adjoint.compat.linalg_solve(dFdu, adj_sol.vector(), dJdu, self.solver_method, self.preconditioner_method,**self.kwargs)
 
     adj_sol_bdy = dolfin_adjoint.compat.function_from_vector(self.function_space, dJdu_copy - dolfin_adjoint.compat.assemble_adjoint_value(
-        dolfin.action(dFdu_form, adj_sol)))
+        firedrake.action(dFdu_form, adj_sol)))
 
     return adj_sol, adj_sol_bdy
 if "dolfin_adjoint_helper" not in dolfin_adjoint.solving.SolveBlock._assemble_and_solve_adj_eq.__module__:

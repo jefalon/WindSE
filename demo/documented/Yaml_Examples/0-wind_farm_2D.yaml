@@ -50,35 +50,35 @@ wind_farm:
 domain: 
     
     ####################### Rectangle Domain #########################
-    # type: rectangle        #                      |
-    # x_range: [-1200, 1200] # x-range of the domain | m
-    # y_range: [-1200, 1200] # y-range of the domain | m
-    # nx: 100                # Number of x-nodes     | -
-    # ny: 100                # Number of y-nodes     | -
+    type: rectangle        #                      |
+    x_range: [-1200, 1200] # x-range of the domain | m
+    y_range: [-1200, 1200] # y-range of the domain | m
+    nx: 200                # Number of x-nodes     | -
+    ny: 200                # Number of y-nodes     | -
     ##################################################################
     
 
     # ########################### Circle Domain #########################
-    type: circle                                  
-    mesh_type: mshr         # squircular, elliptic, stretch
-    radius: 1200            # x-range of the domain | m
-    center: [0.0, 0.0]      # y-range of the domain | m
-    nt: 62                  # segments around circle| -
-    res: 50                 # resolution for mshr   | -
+    # type: circle                                  
+    # mesh_type: mshr         # squircular, elliptic, stretch
+    # radius: 1200            # x-range of the domain | m
+    # center: [0.0, 0.0]      # y-range of the domain | m
+    # nt: 62                  # segments around circle| -
+    # res: 50                 # resolution for mshr   | -
     # ###################################################################
 
 
 
-refine:
+# refine:
     #                      # Description                  | Units
     # farm_num: 1            # number of farm refinements   | -
     # farm_type: square      # type of refinement at farm   | -
     # farm_factor: 1.25       # farm radius multiplier       | -
-    turbine_num: 1         # number of turbine refinements| -
-    turbine_factor: 1.25   # turbine radius multiplier    | -
-    refine_custom: [
-        [box, [  [[-1000,1200],[-200,200]]]  ]
-    ]
+    # turbine_num: 1         # number of turbine refinements| -
+    # turbine_factor: 1.25   # turbine radius multiplier    | -
+    # refine_custom: [
+    #     [box, [  [[-1000,1200],[-200,200]]]  ]
+    # ]
 function_space:
     type: taylor_hood
 
@@ -90,10 +90,10 @@ problem:
     use_25d_model: True
     type: taylor_hood
     viscosity: 5
-    lmax: 50
+    lmax: 100
 
 solver:
-    nonlinear_solver: newton
-    newton_relaxation: 0.9
+    # nonlinear_solver: newton
+    # newton_relaxation: 0.9
     type: steady
     save_power: true

@@ -20,7 +20,7 @@ if main_file != "sphinx-build":
     import numpy as np
     from math import ceil
     import shutil
-    from dolfin import *
+    from firedrake import *
     import sys
     import ast
     import difflib
@@ -242,7 +242,7 @@ class Parameters(dict):
         #     func = init_func
 
         ### Name the function in the meta data, This should probably be done at creation
-        old_filename = func.name()
+        old_filename = func.name
         func.rename(filename,filename)
 
         if filetype == "default":
@@ -255,20 +255,20 @@ class Parameters(dict):
             if filetype == "pvd":
                 file_string = self.folder+subfolder+filename+".pvd"
                 out = File(file_string)
-                out << (func,val)
+                out.write(func,time=val)
             elif filetype == "xdmf":
                 file_string = self.folder+subfolder+filename+".xdmf"
                 out = XDMFFile(file_string)
-                out.write(func,val)
+                out.write(func,time=val)
 
             func.rename(old_filename,old_filename)
             return out
 
         else:
             if filetype == "pvd" or isinstance(func,type(Mesh)):
-                file << (func,val)
+                file.write(func,time=val)
             elif filetype == "xdmf":
-                file.write(func,val)
+                file.write(func,time=val)
 
             func.rename(old_filename,old_filename)
             return file

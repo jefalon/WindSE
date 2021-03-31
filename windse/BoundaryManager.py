@@ -14,7 +14,7 @@ else:
 
 ### This checks if we are just doing documentation ###
 if main_file != "sphinx-build":
-    from dolfin import *
+    from firedrake import *
     import numpy as np
 
     ### Import the cumulative parameters ###
@@ -54,7 +54,7 @@ class GenericBoundary(object):
         self.final_time = self.params["solver"]["final_time"]
 
         ### Define the zero function based on domain dimension ###
-        self.zeros = Constant(dom.mesh.topology().dim()*(0.0,))
+        self.zeros = Constant(dom.dim*(0.0,))
         self.zero  = Constant(0.0)
 
         ### Use custom boundary tags if provided ###
@@ -99,8 +99,7 @@ class GenericBoundary(object):
         ### Inflow is always from the front
 
         self.fprint("Applying Boundary Conditions",offset=1)
-
-        unique_ids = np.unique(self.dom.boundary_markers.array())
+        unique_ids = self.dom.boundary_subdomains
 
         ### Assemble boundary conditions ###
         bcu_eqns = []
@@ -147,17 +146,17 @@ class GenericBoundary(object):
         self.bcu = []
         for i in range(len(bcu_eqns)):
             if bcu_eqns[i][0] is not None:
-                self.bcu.append(DirichletBC(bcu_eqns[i][0], bcu_eqns[i][2], self.dom.boundary_markers, bcu_eqns[i][3]))
+                self.bcu.append(DirichletBC(bcu_eqns[i][0], bcu_eqns[i][2], bcu_eqns[i][3]))
 
         self.bcp = []
         for i in range(len(bcp_eqns)):
             if bcp_eqns[i][0] is not None:
-                self.bcp.append(DirichletBC(bcp_eqns[i][0], bcp_eqns[i][2], self.dom.boundary_markers, bcp_eqns[i][3]))
+                self.bcp.append(DirichletBC(bcp_eqns[i][0], bcp_eqns[i][2], bcp_eqns[i][3]))
 
         self.bcs = []
         for i in range(len(bcs_eqns)):
             if bcs_eqns[i][0] is not None:
-                self.bcs.append(DirichletBC(bcs_eqns[i][1], bcs_eqns[i][2], self.dom.boundary_markers, bcs_eqns[i][3]))
+                self.bcs.append(DirichletBC(bcs_eqns[i][1], bcs_eqns[i][2], bcs_eqns[i][3]))
 
         self.fprint("Boundary Conditions Applied",offset=1)
         self.fprint("")
@@ -217,7 +216,7 @@ class GenericBoundary(object):
         This function saves the turbine force if exists to output/.../functions/
         """
         self.bc_velocity.vector()[:]=self.bc_velocity.vector()[:]/self.dom.xscale
-        self.dom.mesh.coordinates()[:]=self.dom.mesh.coordinates()[:]/self.dom.xscale
+        self.dom.mesh.coordinates.dat.data[:]=self.dom.mesh.coordinates.dat.data[:]/self.dom.xscale
 
         if self.ig_first_save:
             self.u0_file = self.params.Save(self.bc_velocity,"u0",subfolder="functions/",val=val)
@@ -227,13 +226,13 @@ class GenericBoundary(object):
             self.params.Save(self.bc_velocity,"u0",subfolder="functions/",val=val,file=self.u0_file)
             self.params.Save(self.bc_pressure,"p0",subfolder="functions/",val=val,file=self.p0_file)
         self.bc_velocity.vector()[:]=self.bc_velocity.vector()[:]*self.dom.xscale
-        self.dom.mesh.coordinates()[:]=self.dom.mesh.coordinates()[:]*self.dom.xscale
+        self.dom.mesh.coordinates.dat.data[:]=self.dom.mesh.coordinates.dat.data[:]*self.dom.xscale
 
     def SaveHeight(self,val=0):
         """
         This function saves the turbine force if exists to output/.../functions/
         """
-        self.dom.mesh.coordinates()[:]=self.dom.mesh.coordinates()[:]/self.dom.xscale
+        self.dom.mesh.coordinates.dat.data[:]=self.dom.mesh.coordinates.dat.data[:]/self.dom.xscale
         self.height.vector()[:]=self.height.vector()[:]/self.dom.xscale
         self.depth.vector()[:]=self.depth.vector()[:]/self.dom.xscale
         if self.height_first_save:
@@ -245,7 +244,7 @@ class GenericBoundary(object):
             self.params.Save(self.depth,"depth",subfolder="functions/",val=val,file=self.depth_file)
         self.height.vector()[:]=self.height.vector()[:]*self.dom.xscale
         self.depth.vector()[:]=self.depth.vector()[:]*self.dom.xscale
-        self.dom.mesh.coordinates()[:]=self.dom.mesh.coordinates()[:]*self.dom.xscale
+        self.dom.mesh.coordinates.dat.data[:]=self.dom.mesh.coordinates.dat.data[:]*self.dom.xscale
 
     def CalculateHeights(self):
         ### Calculate the distance to the ground for the Q function space ###
@@ -302,10 +301,15 @@ class UniformInflow(GenericBoundary):
         ### Assigning Velocity
         self.fprint("Computing Velocity Vector")
         self.bc_velocity = Function(fs.V)
+        temp = np.zeros(self.bc_velocity.vector().get_local().shape)
         if self.dom.dim == 3:
-            self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy,self.uz])
+            temp[0::3] = self.ux.vector().get_local()
+            temp[1::3] = self.uy.vector().get_local()
+            temp[2::3] = self.uz.vector().get_local()
         else:
-            self.fs.VelocityAssigner.assign(self.bc_velocity,[self.ux,self.uy])
+            temp[0::2] = self.ux.vector().get_local()
+            temp[1::2] = self.uy.vector().get_local()
+        self.bc_velocity.vector().set_local(temp)
 
         ### Create Pressure Boundary Function
         self.bc_pressure = Function(fs.Q)
@@ -313,7 +317,8 @@ class UniformInflow(GenericBoundary):
         ### Create Initial Guess
         self.fprint("Assigning Initial Guess")
         self.u0 = Function(fs.W)
-        self.fs.SolutionAssigner.assign(self.u0,[self.bc_velocity,self.bc_pressure])
+        self.u0.sub(0).vector().set_local(self.bc_velocity.vector().get_local())
+        self.u0.sub(1).vector().set_local(self.bc_pressure.vector().get_local())
 
         ### Setup the boundary Conditions ###
         self.SetupBoundaries()

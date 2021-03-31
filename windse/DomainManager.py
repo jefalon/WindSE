@@ -14,8 +14,8 @@ else:
 
 ### This checks if we are just doing documentation ###
 if main_file != "sphinx-build":
-    from dolfin import *
-    from mshr import *
+    from firedrake import *
+    # from mshr import *
     import copy
     import time
     import warnings
@@ -196,20 +196,20 @@ class GenericDomain(object):
         # file << self.boundary_markers
         # print("Mesh Saved")
 
-        self.mesh.coordinates()[:]=self.mesh.coordinates()[:]/self.xscale
+        self.mesh.coordinates.dat.data[:]=self.mesh.coordinates.dat.data[:]/self.xscale
 
         if self.first_save:
             self.mesh_file = self.params.Save(self.mesh,"mesh",subfolder="mesh/",val=val,filetype="pvd")
-            self.bmesh_file   = self.params.Save(self.bmesh,"boundary_mesh",subfolder="mesh/",val=val,filetype="pvd")
-            self.bc_file   = self.params.Save(self.boundary_markers,"facets",subfolder="mesh/",val=val,filetype="pvd")
+            # self.bmesh_file   = self.params.Save(self.bmesh,"boundary_mesh",subfolder="mesh/",val=val,filetype="pvd")
+            # self.bc_file   = self.params.Save(self.boundary_markers,"facets",subfolder="mesh/",val=val,filetype="pvd")
             # self.mr_file   = self.params.Save(self.mesh_radius,"mesh_radius",subfolder="mesh/",val=val,filetype="pvd")
             self.first_save = False
         else:
             self.params.Save(self.mesh,"mesh",subfolder="mesh/",val=val,file=self.mesh_file,filetype="pvd")
-            self.params.Save(self.bmesh,"boundary_mesh",subfolder="mesh/",val=val,file=self.bmesh_file,filetype="pvd")
-            self.params.Save(self.boundary_markers,"facets",subfolder="mesh/",val=val,file=self.bc_file,filetype="pvd")
+            # self.params.Save(self.bmesh,"boundary_mesh",subfolder="mesh/",val=val,file=self.bmesh_file,filetype="pvd")
+            # self.params.Save(self.boundary_markers,"facets",subfolder="mesh/",val=val,file=self.bc_file,filetype="pvd")
             # self.params.Save(self.mesh_radius,"mesh_radius",subfolder="mesh/",val=val,file=self.mr_file,filetype="pvd")
-        self.mesh.coordinates()[:]=self.mesh.coordinates()[:]*self.xscale
+        self.mesh.coordinates.dat.data[:]=self.mesh.coordinates.dat.data[:]*self.xscale
 
     def ExportMesh(self):
         folder_string = self.params.folder+"mesh/exported_mesh/"
@@ -1254,10 +1254,12 @@ class RectangleDomain(GenericDomain):
         mesh_start = time.time()
         self.fprint("")
         self.fprint("Generating Mesh")
-        start = Point(self.x_range[0], self.y_range[0])
-        stop  = Point(self.x_range[1], self.y_range[1])
-        self.mesh = RectangleMesh(start, stop, self.nx, self.ny)
-        self.bmesh = BoundaryMesh(self.mesh,"exterior")
+        Lx = self.x_range[1] - self.x_range[0]
+        Ly = self.y_range[1] - self.y_range[0]
+        self.mesh = RectangleMesh(self.nx, self.ny,Lx,Ly)
+        self.mesh.coordinates.dat.data[:,0] += self.x_range[0] 
+        self.mesh.coordinates.dat.data[:,1] += self.y_range[0] 
+        # self.bmesh = BoundaryMesh(self.mesh,"exterior")
         mesh_stop = time.time()
         self.fprint("Mesh Generated: {:1.2f} s".format(mesh_stop-mesh_start))
 
@@ -1265,20 +1267,20 @@ class RectangleDomain(GenericDomain):
         mark_start = time.time()
         self.fprint("")
         self.fprint("Marking Boundaries")
-        east   = CompiledSubDomain("near(x[0], x1) && on_boundary",x1 = self.x_range[1])
-        north  = CompiledSubDomain("near(x[1], y1) && on_boundary",y1 = self.y_range[1])
-        west   = CompiledSubDomain("near(x[0], x0) && on_boundary",x0 = self.x_range[0])
-        south  = CompiledSubDomain("near(x[1], y0) && on_boundary",y0 = self.y_range[0])
-        self.boundary_subdomains = [east,north,west,south]
-        self.boundary_names = {"east":1,"north":2,"west":3,"south":4,"bottom":None,"top":None,"inflow":None,"outflow":None}
+        # east   = CompiledSubDomain("near(x[0], x1) && on_boundary",x1 = self.x_range[1])
+        # north  = CompiledSubDomain("near(x[1], y1) && on_boundary",y1 = self.y_range[1])
+        # west   = CompiledSubDomain("near(x[0], x0) && on_boundary",x0 = self.x_range[0])
+        # south  = CompiledSubDomain("near(x[1], y0) && on_boundary",y0 = self.y_range[0])
+        self.boundary_subdomains = [2,4,1,3]
+        self.boundary_names = {"east":2,"north":4,"west":1,"south":3,"bottom":None,"top":None,"inflow":None,"outflow":None}
         self.boundary_types = {"inflow":    ["west","south","north"],
                                "no_stress": ["east"]}
 
         ### Generate the boundary markers for boundary conditions ###
-        self.BuildBoundaryMarkers()
+        # self.BuildBoundaryMarkers()
 
         ### Rotate Boundary
-        if not near(self.inflow_angle,0.0):
+        if not abs(self.inflow_angle)<=1e-14:
             self.RecomputeBoundaryMarkers(self.inflow_angle)
 
         mark_stop = time.time()

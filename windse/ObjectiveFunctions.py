@@ -9,7 +9,7 @@ else:
 
 ### This checks if we are just doing documentation ###
 if main_file != "sphinx-build":
-    from dolfin import *
+    from firedrake import *
     import numpy as np
     import math
 

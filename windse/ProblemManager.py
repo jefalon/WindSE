@@ -14,7 +14,7 @@ else:
     
 ### This checks if we are just doing documentation ###
 if main_file != "sphinx-build":
-    from dolfin import *
+    from firedrake import *
     import numpy as np
     import time
     import scipy.interpolate as interp
@@ -593,7 +593,7 @@ class TaylorHoodProblem(GenericProblem):
         self.tf = self.ComputeTurbineForce(self.u_k,inflow_angle)
 
         ### Create the functional ###
-        self.F = inner(grad(self.u_k)*self.u_k, v)*dx + (nu+self.nu_T)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx + inner(self.tf,v)*dx 
+        self.F = inner(grad(self.u_k)*self.u_k, v)*dx + (nu)*inner(grad(self.u_k), grad(v))*dx - inner(div(v),self.p_k)*dx - inner(div(self.u_k),q)*dx - inner(f,v)*dx + inner(self.tf,v)*dx 
 
         if self.use_25d_model:
             if self.dom.dim == 3:

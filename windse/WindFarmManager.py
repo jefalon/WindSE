@@ -14,7 +14,7 @@ else:
     
 ### This checks if we are just doing documentation ###
 if main_file != "sphinx-build":
-    from dolfin import *
+    from firedrake import *
     import numpy as np
     from sys import platform
     import math
@@ -257,7 +257,7 @@ class GenericWindFarm(object):
         This function saves the turbine force if exists to output/.../functions/
         """
 
-        self.dom.mesh.coordinates()[:]=self.dom.mesh.coordinates()[:]/self.dom.xscale
+        self.dom.mesh.coordinates.dat.data[:]=self.dom.mesh.coordinates.dat.data[:]/self.dom.xscale
         if hasattr(self.actuator_disks,"_cpp_object"):
             if self.rd_first_save:
                 self.rd_file = self.params.Save(self.actuator_disks,"actuator_disks",subfolder="functions/",val=val)
@@ -265,7 +265,7 @@ class GenericWindFarm(object):
             else:
                 self.params.Save(self.actuator_disks,"actuator_disks",subfolder="functions/",val=val,file=self.rd_file)
 
-        self.dom.mesh.coordinates()[:]=self.dom.mesh.coordinates()[:]*self.dom.xscale
+        self.dom.mesh.coordinates.dat.data[:]=self.dom.mesh.coordinates.dat.data[:]*self.dom.xscale
 
     def CalculateFarmBoundingBox(self):
         """
@@ -309,10 +309,10 @@ class GenericWindFarm(object):
             self.myaw.append(Constant(self.yaw[i]))
 
         for i in range(self.numturbs):
-            self.mx[i].rename("x"+repr(i),"x"+repr(i))
-            self.my[i].rename("y"+repr(i),"y"+repr(i))
-            self.myaw[i].rename("yaw"+repr(i),"yaw"+repr(i))
-            self.ma[i].rename("a"+repr(i),"a"+repr(i))
+            self.mx[i].name="x"+repr(i)
+            self.my[i].name="y"+repr(i)
+            self.myaw[i].name="yaw"+repr(i)
+            self.ma[i].name="a"+repr(i)
 
     def UpdateControls(self,x=None,y=None,yaw=None,a=None,chord=None):
 
@@ -1007,7 +1007,7 @@ class GenericWindFarm(object):
 
         ### Save the actuator disks for post processing ###
         self.fprint("Projecting Turbine Force")
-        self.actuator_disks = project(rd,fs.V,solver_type='mumps',**self.extra_kwarg)
+        self.actuator_disks = project(rd,fs.V,solver_parameters={"linear_solver":"mumps"},**self.extra_kwarg)
 
         tf_stop = time.time()
         self.fprint("Turbine Force Calculated: {:1.2f} s".format(tf_stop-tf_start),special="footer")

@@ -11,10 +11,10 @@ else:
 if main_file != "sphinx-build":
     from windse import windse_parameters
     if windse_parameters.dolfin_adjoint:
-        from dolfin import dx, File, dot
+        from firedrake import dx, File, dot
         from dolfin_adjoint import Constant, Function, Expression, assemble
     else:
-        from dolfin import Constant, Function, Expression, dot, dx, assemble, File
+        from firedrake import Constant, Function, Expression, dot, dx, assemble, File
 
     import numpy as np
     import scipy.interpolate as interp

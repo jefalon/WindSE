@@ -14,7 +14,7 @@ else:
     
 ### This checks if we are just doing documentation ###
 if main_file != "sphinx-build":
-    from dolfin import *
+    from firedrake import *
     import time
 
     ### Import the cumulative parameters ###
@@ -49,11 +49,11 @@ class GenericFunctionSpace(object):
 
         if self.dim == 3: 
             self.V2 = self.V.sub(2).collapse()
-            self.VelocityAssigner = FunctionAssigner(self.V,[self.V0,self.V1,self.V2])
-        else:
-            self.VelocityAssigner = FunctionAssigner(self.V,[self.V0,self.V1])
+        #     self.VelocityAssigner = FunctionAssigner(self.V,[self.V0,self.V1,self.V2])
+        # else:
+        #     self.VelocityAssigner = FunctionAssigner(self.V,[self.V0,self.V1])
 
-        self.SolutionAssigner = FunctionAssigner(self.W,[self.V,self.Q])
+        # self.SolutionAssigner = FunctionAssigner(self.W,[self.V,self.Q])
 
         ### Create Function Spaces for numpy turbine force ###
         if self.turbine_method == "numpy":

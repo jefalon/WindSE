@@ -14,7 +14,7 @@ else:
     
 ### This checks if we are just doing documentation ###
 if main_file != "sphinx-build":
-    from dolfin import *
+    from firedrake import *
     from sys import platform
     import time
     import numpy as np
@@ -144,7 +144,7 @@ class GenericSolver(object):
         p = self.problem.p_k
 
         u.vector()[:]=u.vector()[:]/self.problem.dom.xscale
-        self.problem.dom.mesh.coordinates()[:]=self.problem.dom.mesh.coordinates()[:]/self.problem.dom.xscale
+        self.problem.dom.mesh.coordinates.dat.data[:]=self.problem.dom.mesh.coordinates.dat.data[:]/self.problem.dom.xscale
 
         if self.first_save:
             self.u_file = self.params.Save(u,"velocity",subfolder="solutions/",val=val)
@@ -162,7 +162,7 @@ class GenericSolver(object):
                 self.params.Save(self.ReyStress,"Reynolds_stresses",subfolder="solutions/",val=val,file=self.ReyStress_file)
                 self.params.Save(self.vertKE,"Vertical KE",subfolder="solutions/",val=val,file=self.vertKE_file)
         u.vector()[:]=u.vector()[:]*self.problem.dom.xscale
-        self.problem.dom.mesh.coordinates()[:]=self.problem.dom.mesh.coordinates()[:]*self.problem.dom.xscale
+        self.problem.dom.mesh.coordinates.dat.data[:]=self.problem.dom.mesh.coordinates.dat.data[:]*self.problem.dom.xscale
 
     def ChangeWindSpeed(self,inflow_speed):
         """
@@ -233,8 +233,8 @@ class SteadySolver(GenericSolver):
 
         ### Save Files before solve ###
         self.fprint("Saving Input Data",special="header")
-        if "mesh" in self.params.output:
-            self.problem.dom.Save(val=iter_val)
+        # if "mesh" in self.params.output:
+        #     self.problem.dom.Save(val=iter_val)
         if "initial_guess" in self.params.output:
             self.problem.bd.SaveInitialGuess(val=iter_val)
         if "height" in self.params.output and self.problem.dom.dim == 3:
@@ -351,10 +351,10 @@ class SteadySolver(GenericSolver):
         self.fprint("Solve Complete: {:1.2f} s".format(stop-start),special="footer")
         # self.fprint("Memory Used:  {:1.2f} MB".format(mem_out-mem0))
         # self.u_k,self.p_k = self.problem.up_k.split(True)
-        self.problem.u_k,self.problem.p_k = self.problem.up_k.split(True)
+        self.problem.u_k,self.problem.p_k = self.problem.up_k.split()
 
         ### Hack into doflin adjoint to update the local controls at the start of the adjoint solve ###
-        self.nu_T = project(self.problem.nu_T,self.problem.fs.Q,solver_type='gmres',preconditioner_type="hypre_amg",**self.extra_kwarg)
+        self.nu_T = project(self.problem.nu_T,self.problem.fs.Q,solver_parameters={"linear_solver":"gmres","preconditioner_type":"hypre_amg"},**self.extra_kwarg)
         if self.problem.dom.dim == 3:
             self.fprint("")
             self.fprint("Projecting Reynolds Stress")
