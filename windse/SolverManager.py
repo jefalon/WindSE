@@ -345,6 +345,10 @@ class SteadySolver(GenericSolver):
         ### Solve the real problem ###
         # mem0=memory_usage()[0]
         # mem_out, _ = memory_usage((solve,(self.problem.F == 0, self.problem.up_k, self.problem.bd.bcs),{"solver_parameters": solver_parameters}),max_usage=True,retval=True,max_iterations=1)
+        # print(self.problem.dom.boundary_types))
+        # print(self.problem.bd.bcs)
+        # exit()
+
         solve(self.problem.F == 0, self.problem.up_k, self.problem.bd.bcs, solver_parameters=solver_parameters)
         stop = time.time()
 

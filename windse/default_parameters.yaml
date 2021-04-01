@@ -94,6 +94,7 @@ boundary_conditions:
     k:              0.4
     turbsim_path:   Null
     inflow_angle:   Null
+    spanwise_periodic: False
     boundary_names: 
         east:    Null   # positive x
         north:   Null   # positive y

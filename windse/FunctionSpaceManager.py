@@ -24,6 +24,44 @@ if main_file != "sphinx-build":
     if windse_parameters.dolfin_adjoint:
         from dolfin_adjoint import *
 
+
+
+# Sub domain for Periodic boundary condition
+class SinglePeriodicBoundary(SubDomain):
+
+    def __init__(self,a,b,axis=1):
+        super(SinglePeriodicBoundary, self).__init__()
+        self.axis   = axis # 0 for periodic x and 1 for periodic y
+        self.target = a    # location of the primary boundary 
+        self.offset = b-a  # the offset from the primary to the secondary 
+
+    # returns true primary boundary 
+    def inside(self, x, on_boundary):
+        return near(x[self.axis],self.target) and on_boundary
+
+    # this maps the secondary boundary to the primary boundary
+    def map(self, x, y):
+        y[:] = x[:] # Set all equal
+        y[self.axis] = x[self.axis] - self.offset # Modify the value that is periodic
+
+# class DoublePeriodicBoundary(SubDomain):
+
+
+#     def __init__(self,x_range,y_range,spanwise_periodic,streamwise_periodic):
+#         super(PeriodicBoundary, self).__init__()
+
+#     # Left boundary is "target domain" 
+#     def inside(self, x, on_boundary):
+#         return bool(x[0] < DOLFIN_EPS and x[0] > -DOLFIN_EPS and on_boundary)
+
+#     # Map right boundary (H) to left boundary (G)
+#     def map(self, x, y):
+#         y[0] = x[0] - 1.0
+#         y[1] = x[1]
+
+
+
+
 class GenericFunctionSpace(object):
     def __init__(self,dom):
         self.params = windse_parameters
@@ -37,6 +75,7 @@ class GenericFunctionSpace(object):
         for key, value in self.params["function_space"].items():
             setattr(self,key,value)
         self.turbine_method = self.params["wind_farm"]["turbine_method"]
+        self.spanwise_periodic = self.params["boundary_conditions"]["spanwise_periodic"]
 
         if self.turbine_space == "Quadrature" and (self.turbine_degree != self.quadrature_degree):
             raise ValueError("When using the numpy representation with the 'Quadrature' space, the turbine degree and quadrature degree must be equal.")
@@ -58,7 +97,7 @@ class GenericFunctionSpace(object):
         ### Create Function Spaces for numpy turbine force ###
         if self.turbine_method == "numpy":
             tf_V = VectorElement(self.turbine_space,self.mesh.ufl_cell(),degree=self.turbine_degree,quad_scheme="default")
-            self.tf_V = FunctionSpace(self.mesh, tf_V)
+            self.tf_V = FunctionSpace(self.mesh, tf_V, constrained_domain=pbc)
             self.tf_V0 = self.tf_V.sub(0).collapse() 
             self.fprint("Quadrature DOFS: {:d}".format(self.tf_V.dim()))
 
@@ -81,10 +120,17 @@ class LinearFunctionSpace(GenericFunctionSpace):
         fs_start = time.time()
         self.fprint("Creating Function Space",special="header")
 
+        if self.spanwise_periodic:
+            self.fprint("Using Spanwise Periodic Boundaries")
+            pbc = SinglePeriodicBoundary(dom.y_range[0],dom.y_range[1],axis=1)
+            dom.excluded_boundaries = ["north","south"]
+        else:
+            pbc = None
+
         V = VectorElement('Lagrange', self.mesh.ufl_cell(), 1) 
         Q = FiniteElement('Lagrange', self.mesh.ufl_cell(), 1)
-        self.T = FunctionSpace(dom.mesh, TensorElement('Lagrange', dom.mesh.ufl_cell(), 1))
-        self.W = FunctionSpace(self.mesh, MixedElement([V,Q]))
+        self.T = FunctionSpace(dom.mesh, TensorElement('Lagrange', dom.mesh.ufl_cell(), 1), constrained_domain=pbc)
+        self.W = FunctionSpace(self.mesh, MixedElement([V,Q]), constrained_domain=pbc)
 
         self.SetupSubspaces()
 
@@ -111,8 +157,8 @@ class TaylorHoodFunctionSpace(GenericFunctionSpace):
         ### Create the function space ###
         fs_start = time.time()
         self.fprint("Creating Function Space",special="header")
-        V = VectorElement('Lagrange', self.mesh.ufl_cell(), 2) 
-        Q = FiniteElement('Lagrange', self.mesh.ufl_cell(), 1)
+        V = VectorElement('Lagrange', self.mesh.ufl_cell(), 2, constrained_domain=pbc) 
+        Q = FiniteElement('Lagrange', self.mesh.ufl_cell(), 1, constrained_domain=pbc)
         self.W = FunctionSpace(self.mesh, MixedElement([V,Q]))
 
         self.SetupSubspaces()

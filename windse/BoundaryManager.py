@@ -62,6 +62,7 @@ class GenericBoundary(object):
             self.boundary_names = self.dom.boundary_names
         if self.params.default_bc_types:
             self.boundary_types = self.dom.boundary_types
+        self.excluded_boundaries = self.dom.excluded_boundaries
 
     def DebugOutput(self):
         if self.debug_mode:
@@ -92,6 +93,16 @@ class GenericBoundary(object):
             # Get number of boundary conditions 
             num_bc = len(self.bcu) + len(self.bcp) + len(self.bcs)
             self.tag_output("num_bc",num_bc)
+
+    def CheckBoundaryConditions(self):
+        for key, values in self.boundary_types.items():
+            self.fprint("Boundary Type: {0}, Applied to:".format(key))
+            temp = values.copy()
+            for value in temp:
+                if value in self.excluded_boundaries:
+                    values.remove(value)
+                else:
+                    self.fprint(value,offset=1)
 
     def SetupBoundaries(self):
         ### Create the equations need for defining the boundary conditions ###
@@ -276,10 +287,7 @@ class UniformInflow(GenericBoundary):
         super(UniformInflow, self).__init__(dom,fs,farm)
         self.fprint("Setting Up Boundary Conditions",special="header")
         self.fprint("Type: Uniform Inflow")
-        for key, values in self.boundary_types.items():
-            self.fprint("Boundary Type: {0}, Applied to:".format(key))
-            for value in values:
-                self.fprint(value,offset=1)
+        self.CheckBoundaryConditions()
         ### Create the Velocity Function ###
         self.ux = Function(fs.V0)
         self.uy = Function(fs.V1)
@@ -349,10 +357,7 @@ class PowerInflow(GenericBoundary):
         ### Setup Boundary Conditions
         self.fprint("Setting Up Boundary Conditions",special="header")
         self.fprint("Type: Power Law Inflow")
-        for key, values in self.boundary_types.items():
-            self.fprint("Boundary Type: {0}, Applied to:".format(key))
-            for value in values:
-                self.fprint(value,offset=1)
+        self.CheckBoundaryConditions()
         self.fprint("")
 
         ### Compute distances ###
@@ -419,10 +424,7 @@ class LogLayerInflow(GenericBoundary):
         self.fprint("Setting Up Boundary Conditions",special="header")
         self.fprint("Type: Power Law Inflow")
 
-        for key, values in self.boundary_types.items():
-            self.fprint("Boundary Type: {0}, Applied to:".format(key))
-            for value in values:
-                self.fprint(value,offset=1)
+        self.CheckBoundaryConditions()
         self.fprint("")
 
         ### Compute distances ###

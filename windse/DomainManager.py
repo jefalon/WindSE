@@ -85,6 +85,38 @@ def Simple_Stretching(x, y, z, radius):
     z_hat = z
     return [x_hat, y_hat, z_hat]
 
+# Sub domain for Periodic boundary condition
+class SinglePeriodicBoundary(SubDomain):
+
+    def __init__(self,a,b,axis=1):
+        super(SinglePeriodicBoundary, self).__init__()
+        self.axis   = axis # 0 for periodic x and 1 for periodic y
+        self.target = a    # location of the primary boundary 
+        self.offset = b-a  # the offset from the primary to the secondary 
+
+    # returns true primary boundary 
+    def inside(self, x, on_boundary):
+        return near(x[self.axis],self.target) and on_boundary
+
+    # this maps the secondary boundary to the primary boundary
+    def map(self, x, y):
+        y[:] = x[:] # Set all equal
+        y[self.axis] = x[self.axis] - self.offset # Modify the value that is periodic
+
+# class DoublePeriodicBoundary(SubDomain):
+
+
+#     def __init__(self,x_range,y_range,spanwise_periodic,streamwise_periodic):
+#         super(PeriodicBoundary, self).__init__()
+
+#     # Left boundary is "target domain" 
+#     def inside(self, x, on_boundary):
+#         return bool(x[0] < DOLFIN_EPS and x[0] > -DOLFIN_EPS and on_boundary)
+
+#     # Map right boundary (H) to left boundary (G)
+#     def map(self, x, y):
+#         y[0] = x[0] - 1.0
+#         y[1] = x[1]
 
 
 
@@ -123,6 +155,9 @@ class GenericDomain(object):
         elif isinstance(self.inflow_angle,list):
             self.inflow_angle = self.inflow_angle[0]
         self.initial_inflow_angle = self.inflow_angle
+
+        ### Create an object to hold excluded boundaries for periodic boundaries
+        self.excluded_boundaries = []
 
 
     def DebugOutput(self):
@@ -762,7 +797,6 @@ class GenericDomain(object):
 
     def RecomputeBoundaryMarkers(self,inflow_angle):
         raise NotImplementedError("This Domain type does not support nonzero inflow angles.")
-
 
 class BoxDomain(GenericDomain):
     """
