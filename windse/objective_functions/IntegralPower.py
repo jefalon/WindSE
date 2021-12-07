@@ -35,7 +35,7 @@ def objective(solver, inflow_angle = 0.0, first_call=False, annotate=True, **kwa
     # if not annotate:
     #     stop_annotating()
 
-    J = assemble(dot(-solver.problem.tf,solver.problem.u_k)*dx)
+    J = assemble(dot(-solver.problem.tf,solver.problem.u_k)*dx)/1e6
     # J = assemble(dot(-solver.problem.tf,Constant((1.0,1.0,1.0)))*dx)
 
     # coords = solver.problem.fs.V.tabulate_dof_coordinates()
@@ -73,7 +73,7 @@ def objective(solver, inflow_angle = 0.0, first_call=False, annotate=True, **kwa
                 yaw = solver.problem.farm.myaw[i]
                 # https://aip.scitation.org/doi/pdf/10.1063/5.0023746 and https://www.osti.gov/pages/biblio/1238764 for yaw exponent
                 tf=solver.problem.farm.actuator_disks_list[i]*dot(solver.problem.u_k,solver.problem.u_k)*cos(yaw)**.88
-                J_list[i+2] = assemble(dot(-tf,solver.problem.u_k)*dx,**solver.extra_kwarg)
+                J_list[i+2] = assemble(dot(-tf,solver.problem.u_k)*dx,**solver.extra_kwarg)/1e6
 
 
                 #original
@@ -87,8 +87,8 @@ def objective(solver, inflow_angle = 0.0, first_call=False, annotate=True, **kwa
                 pass
                 # print("WARNING: missing individual turbine actuator disk, only able to report full farm power")
 
-        # J_list[-1]=float(J)
-        J_list[-1]=np.sum(J_list[2:-1])
+        J_list[-1]=float(J)
+        # J_list[-1]=np.sum(J_list[2:-1])
 
 
         folder_string = solver.params.folder+"data/"

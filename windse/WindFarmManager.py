@@ -1010,9 +1010,13 @@ class GenericWindFarm(object):
             # compute disk averaged velocity in yawed case and don't project
             self.actuator_disks_list.append(F*T*D*WTGbase/volNormalization)
             rd  += F*T*D*WTGbase/volNormalization
-            tf1 += F*T*D*WTGbase/volNormalization * cos(yaw)**2
-            tf2 += F*T*D*WTGbase/volNormalization * sin(yaw)**2
-            tf3 += F*T*D*WTGbase/volNormalization * 2.0 * cos(yaw) * sin(yaw)
+            # tf1 += F*T*D*WTGbase/volNormalization * cos(yaw)**2
+            # tf2 += F*T*D*WTGbase/volNormalization * sin(yaw)**2
+            # tf3 += F*T*D*WTGbase/volNormalization * 2.0 * cos(yaw) * sin(yaw)
+
+            tf1 += F*T*D*WTGbase/volNormalization * cos(yaw)**.88
+            tf2 += 0 
+            tf3 += 0 
 
         ### Save the actuator disks for post processing ###
         self.fprint("Projecting Turbine Force")
