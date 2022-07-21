@@ -408,24 +408,7 @@ class GenericWindFarm(object):
 
         plt.close()
 
-    def save_functions(self,val=0):
-        """
-        This function call the prepare_saved_functions from each turbine, combines the functions and saves them.
-        It then check to see if it can save the function out right and if not it projects. 
-        "val" can be the time, or angle, its just the iterator for saving mulitple steps
-        Note: this function is way over engineered!
-        """
-
-        # gather functions
-        func_list = []
-        for turb in self.turbines:
-            func_list = turb.prepare_saved_functions(func_list)
-
-        # prepare to store file pointer if needed
-        if self.func_first_save:
-            self.func_files = []
-
-        # save gathered
+    def project_before_save(self, func_list):
         for i, func_to_save in enumerate(func_list):
             func = func_to_save[0]
             func_name = func_to_save[1]
@@ -440,7 +423,39 @@ class GenericWindFarm(object):
                 else:
                     FS = self.fs.V
                 # project onto the function space
-                func = project(func,FS,solver_type='cg',preconditioner_type="hypre_amg",**self.extra_kwarg)
+                func_list[i][0] = project(func,FS,solver_type='cg',preconditioner_type="hypre_amg",**self.extra_kwarg)
+
+    def save_functions(self,val=0):
+        """
+        This function call the prepare_saved_functions from each turbine, combines the functions and saves them.
+        It then check to see if it can save the function out right and if not it projects. 
+        "val" can be the time, or angle, its just the iterator for saving mulitple steps
+        Note: this function is way over engineered!
+        """
+
+        # gather functions
+        func_list = []
+        count = 0
+        for turb in self.turbines:
+            func_list = turb.prepare_saved_functions(func_list)
+            count += 1
+
+            # # if we have too many turbines, we need to project sooner rather than later, 60 was found by trial and error
+            # if count >= 60:
+            #     count = 0
+            #     self.project_before_save(func_list)
+
+        # we need to project to save if the thing we are saving is not a standard function
+        self.project_before_save(func_list)
+
+        # prepare to store file pointer if needed
+        if self.func_first_save:
+            self.func_files = []
+
+        # save gathered
+        for i, func_to_save in enumerate(func_list):
+            func = func_to_save[0]
+            func_name = func_to_save[1]
 
             # save, if first time, store the file location pointers
             if self.func_first_save:
